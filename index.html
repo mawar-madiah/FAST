@@ -291,7 +291,37 @@ deleteBtn.onclick=()=>{
 load(); renderStudents(); populate(); renderRecords();
 roleSelect.dispatchEvent(new Event('change'));
 </script>
+  <!-- Load PapaParse library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<script>
+  // Load students.csv
+  Papa.parse('data/students.csv', {
+    download: true,
+    header: true,
+    complete: function(results) {
+      console.log('Students CSV:', results.data);
+    },
+    error: function(err) {
+      console.error('Error loading students.csv:', err);
+    }
+  });
+
+  // Load courses.csv
+  Papa.parse('data/courses.csv', {
+    download: true,
+    header: true,
+    complete: function(results) {
+      console.log('Courses CSV:', results.data);
+    },
+    error: function(err) {
+      console.error('Error loading courses.csv:', err);
+    }
+  });
+</script>
+
 </body>
 </html>
+
 
 
