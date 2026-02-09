@@ -45,16 +45,16 @@ Academic Support (<strong>FAST 1.0</strong>)
 <h2>Upload Data (Program Coordinator)</h2>
 
 <p class="note">Students CSV: StudentID, Name, Program, AdmitTerm, CGPA, AdvisorName</p>
-<input type="file" id="studentUpload" accept=".csv">
+<input type="file" id="studentUpload" accept="data/student.csv">
 
 <p class="note">Lecturers CSV: LecturerName</p>
-<input type="file" id="lecturerUpload" accept=".csv">
+<input type="file" id="lecturerUpload" accept="data/staff.csv">
 
 <p class="note">Courses CSV: CourseCode, CourseName</p>
-<input type="file" id="courseUpload" accept=".csv">
+<input type="file" id="courseUpload" accept="data/course.csv">
 
 <p class="note">Terms CSV: TermID</p>
-<input type="file" id="termUpload" accept=".csv">
+<input type="file" id="termUpload" accept="data/term.csv">
 
 <button class="btn export" id="exportBtn">Export All Records</button>
 <button class="btn delete" id="deleteBtn">Delete All Data</button>
@@ -293,4 +293,5 @@ roleSelect.dispatchEvent(new Event('change'));
 </script>
 </body>
 </html>
+
 
