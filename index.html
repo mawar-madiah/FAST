@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAST 2.1 – Laptop & Phone Compatible</title>
+<title>FAST 2.2 – Laptop & Phone Compatible</title>
 
 <style>
 body { font-family: Arial, sans-serif; background:#f5f7fa; padding:20px; }
@@ -29,7 +29,7 @@ th { background:#f0f2f5; }
 
 <h1 style="text-align:center; line-height:1.3;">
 Foundation in Science and Technology<br>
-Academic Support (<strong>FAST 2.1</strong>)
+Academic Support (<strong>FAST 2.2</strong>)
 </h1>
 
 <p class="note">Select your role to access features.</p>
@@ -182,83 +182,73 @@ function readCSV(file, cb){
   r.readAsText(file);
 }
 
+// ================= HEADER NORMALIZATION =================
+function normalizeStudents(data){
+  if(data.length===0) return [];
+  const keys = Object.keys(data[0]);
+  const map = {};
+  keys.forEach(k=>map[k.trim().toLowerCase()]=k);
+  return data.map(row=>({
+    id: row[map['studentid']] || row[map['student_id']] || "",
+    name: row[map['name']] || "",
+    prog: row[map['program']] || "",
+    term: row[map['admitterm']] || "",
+    cgpa: row[map['cgpa']] || "",
+    advisor: row[map['advisorname']] || row[map['advisor']] || ""
+  }));
+}
+
+function normalizeLecturers(data){
+  if(data.length===0) return [];
+  const keys = Object.keys(data[0]);
+  const map = {};
+  keys.forEach(k=>map[k.trim().toLowerCase()]=k);
+  return data.map(row=>row[map['lecturername']] || row[map['name']] || "");
+}
+
+function normalizeCourses(data){
+  if(data.length===0) return [];
+  const keys = Object.keys(data[0]);
+  const map = {};
+  keys.forEach(k=>map[k.trim().toLowerCase()]=k);
+  return data.map(row=>({
+    code: row[map['coursecode']] || "",
+    name: row[map['coursename']] || ""
+  }));
+}
+
+function normalizeTerms(data){
+  if(data.length===0) return [];
+  const keys = Object.keys(data[0]);
+  const map = {};
+  keys.forEach(k=>map[k.trim().toLowerCase()]=k);
+  return data.map(row=>row[map['termid']] || "");
+}
+
 // ================= UPLOADS =================
 studentUpload.onchange=()=>readCSV(studentUpload.files[0],lines=>{
-  students=lines.map(l=>{
-    const [id,n,p,t,c,a]=l.split(',');
-    return {id:id?.trim(),name:n?.trim(),prog:p?.trim(),term:t?.trim(),cgpa:c?.trim(),advisor:a?.trim()};
-  }).filter(s=>s.id);
+  const data = Papa.parse(lines.join('\n'), {header:true, skipEmptyLines:true}).data;
+  students = normalizeStudents(data);
   save(); renderStudents(); populate(); alert('Students uploaded');
 });
 
-lecturerUpload.onchange=()=>readCSV(lecturerUpload.files[0],l=>{
-  lecturers=l.map(x=>x.split(',')[0].trim()).filter(Boolean);
+lecturerUpload.onchange=()=>readCSV(lecturerUpload.files[0],lines=>{
+  const data = Papa.parse(lines.join('\n'), {header:true, skipEmptyLines:true}).data;
+  lecturers = normalizeLecturers(data);
   save(); populate(); alert('Lecturers uploaded');
 });
 
-courseUpload.onchange=()=>readCSV(courseUpload.files[0],l=>{
-  courses=l.map(x=>{const[c,n]=x.split(','); return {code:c?.trim(),name:n?.trim()};}).filter(c=>c.code);
+courseUpload.onchange=()=>readCSV(courseUpload.files[0],lines=>{
+  const data = Papa.parse(lines.join('\n'), {header:true, skipEmptyLines:true}).data;
+  courses = normalizeCourses(data);
   save(); populate(); alert('Courses uploaded');
 });
 
-termUpload.onchange=()=>readCSV(termUpload.files[0],l=>{
-  terms=l.map(x=>x.trim()).filter(Boolean);
+termUpload.onchange=()=>readCSV(termUpload.files[0],lines=>{
+  const data = Papa.parse(lines.join('\n'), {header:true, skipEmptyLines:true}).data;
+  terms = normalizeTerms(data);
   save(); populate(); alert('Terms uploaded');
 });
-
-// ================= LOAD DEFAULT CSVs FROM GITHUB =================
-const githubDataBase = 'https://raw.githubusercontent.com/mawar-madiah/FAST/main/data/';
-
-function loadDefaultCSV(filename, callback){
-  Papa.parse(githubDataBase+filename, {
-    download:true,
-    header:true,
-    skipEmptyLines:true,
-    complete: function(results){
-      callback(results.data);
-    },
-    error: function(){ console.log('Failed to load '+filename); }
-  });
-}
-
-// Load default students if localStorage empty
-if(students.length===0){
-  loadDefaultCSV('student.csv', data=>{
-    students = data.map(s=>({
-      id: s.StudentID || s.studentid || s.student_id || "",
-      name: s.Name || s.name || "",
-      prog: s.Program || s.program || "",
-      term: s.AdmitTerm || s.admitterm || "",
-      cgpa: s.CGPA || s.cgpa || "",
-      advisor: s.AdvisorName || s.advisorname || s.advisor || ""
-    }));
-    renderStudents(); populate();
-  });
-}
-
-if(lecturers.length===0){
-  loadDefaultCSV('staff.csv', data=>{
-    lecturers = data.map(s=> s.LecturerName || s.lecturername || s.name );
-    populate();
-  });
-}
-
-if(courses.length===0){
-  loadDefaultCSV('course.csv', data=>{
-    courses = data.map(s=>({
-      code: s.CourseCode || s.coursecode || "",
-      name: s.CourseName || s.coursename || ""
-    }));
-    populate();
-  });
-}
-
-if(terms.length===0){
-  loadDefaultCSV('term.csv', data=>{
-    terms = data.map(s=> s.TermID || s.termid || "");
-    populate();
-  });
-}
 
 // ================= RENDER =================
 function renderStudents(){
