@@ -3,144 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAST – Academic Support System</title>
+<title>FAST 1.0</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f7fa;
-  padding: 16px;
-}
-.container {
-  max-width: 1100px;
-  margin: auto;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,.08);
-}
-h1, h2 {
-  color: #1f2937;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-th {
-  background: #f0f2f5;
-}
-.status {
-  color: red;
-  margin-bottom: 10px;
-}
+body { font-family: Arial, sans-serif; background:#f5f7fa; padding:20px; }
+.container { max-width:1200px; margin:auto; background:#fff; padding:24px; border-radius:10px; }
+h1,h2 { color:#1f2937; }
+select,input,textarea { width:100%; padding:8px; margin-top:6px; }
+table { width:100%; border-collapse:collapse; margin-top:12px; }
+th,td { border:1px solid #ddd; padding:8px; }
+th { background:#f0f2f5; }
+.note { color:#555; font-size:.9em; }
 </style>
 
-<!-- Load PapaParse locally (mobile-safe) -->
+<!-- PapaParse MUST be loaded first -->
 <script src="papaparse.min.js"></script>
 </head>
 
 <body>
 <div class="container">
 
-<h1>Foundation in Science & Technology<br>Academic Support (FAST)</h1>
+<h1 style="text-align:center;">
+Foundation in Science and Technology<br>
+Academic Support (FAST 1.0)
+</h1>
 
-<div id="status" class="status"></div>
+<label>Role</label>
+<select id="roleSelect">
+  <option value="lecturer">Lecturer</option>
+  <option value="coordinator">Program Coordinator</option>
+</select>
 
-<h2>Students</h2>
+<!-- ================= COORDINATOR ================= -->
+<div id="coordinatorSection" style="display:none;">
+<h2>Student List</h2>
 <table>
 <thead>
 <tr>
-<th>No</th>
-<th>Student ID</th>
-<th>Name</th>
-<th>Program</th>
-<th>Admit Term</th>
-<th>CGPA</th>
-<th>Advisor</th>
+<th>No</th><th>ID</th><th>Name</th><th>Program</th><th>Term</th><th>CGPA</th><th>Advisor</th>
 </tr>
 </thead>
-<tbody id="studentsTable"></tbody>
+<tbody id="studentTable"></tbody>
 </table>
+</div>
 
-<h2>Courses</h2>
-<table>
-<thead>
-<tr>
-<th>Course Code</th>
-<th>Course Name</th>
-</tr>
-</thead>
-<tbody id="coursesTable"></tbody>
-</table>
+<!-- ================= LECTURER ================= -->
+<div id="lecturerSection" style="display:none;">
+<h2>Academic Support Entry</h2>
+
+<label>Lecturer</label>
+<select id="lecturerSelect"></select>
+
+<label>Course</label>
+<select id="courseSelect"></select>
+
+<label>Term</label>
+<select id="termSelect"></select>
+
+<label>Student</label>
+<select id="studentSelect"></select>
+
+<label>Student Name</label>
+<input id="s_name" readonly>
+
+<label>Comment</label>
+<textarea></textarea>
+</div>
+
+<p id="status" style="color:red;"></p>
 
 </div>
 
 <script>
-const statusDiv = document.getElementById("status");
-const studentsTable = document.getElementById("studentsTable");
-const coursesTable = document.getElementById("coursesTable");
+// ================= DATA =================
+let students=[], lecturers=[], courses=[], terms=[];
 
-function showError(msg) {
-  statusDiv.innerText = msg;
+// ================= ELEMENTS =================
+const roleSelect = document.getElementById('roleSelect');
+const coordinatorSection = document.getElementById('coordinatorSection');
+const lecturerSection = document.getElementById('lecturerSection');
+
+// ================= ROLE SWITCH =================
+roleSelect.onchange = () => {
+  coordinatorSection.style.display = roleSelect.value === 'coordinator' ? 'block' : 'none';
+  lecturerSection.style.display = roleSelect.value === 'lecturer' ? 'block' : 'none';
+};
+
+// ================= CSV LOADERS =================
+function loadCSV(path, callback){
+  Papa.parse(path, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: r => callback(r.data),
+    error: () => document.getElementById('status').innerText =
+      'Failed to load ' + path
+  });
 }
 
-// ================= LOAD STUDENTS =================
-Papa.parse("data/students.csv", {
-  download: true,
-  header: true,
-  complete: function (res) {
-    if (!res.data || res.data.length === 0) {
-      showError("Students CSV loaded but empty.");
-      return;
-    }
-
-    studentsTable.innerHTML = "";
-    res.data.forEach((s, i) => {
-      if (!s.StudentID) return;
-      studentsTable.innerHTML += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${s.StudentID}</td>
-          <td>${s.Name}</td>
-          <td>${s.Program}</td>
-          <td>${s.AdmitTerm}</td>
-          <td>${s.CGPA}</td>
-          <td>${s.AdvisorName}</td>
-        </tr>`;
-    });
-  },
-  error: function () {
-    showError("❌ Failed to load data/students.csv");
-  }
+// ================= LOAD ALL DATA =================
+loadCSV('data/student.csv', data => {
+  students = data;
+  renderStudents();
+  populateStudents();
 });
 
-// ================= LOAD COURSES =================
-Papa.parse("data/courses.csv", {
-  download: true,
-  header: true,
-  complete: function (res) {
-    if (!res.data || res.data.length === 0) return;
-
-    coursesTable.innerHTML = "";
-    res.data.forEach(c => {
-      if (!c.CourseCode) return;
-      coursesTable.innerHTML += `
-        <tr>
-          <td>${c.CourseCode}</td>
-          <td>${c.CourseName}</td>
-        </tr>`;
-    });
-  },
-  error: function () {
-    showError("❌ Failed to load data/courses.csv");
-  }
+loadCSV('data/staff.csv', data => {
+  lecturers = data.map(d => d.LecturerName);
+  populateLecturers();
 });
+
+loadCSV('data/course.csv', data => {
+  courses = data;
+  populateCourses();
+});
+
+loadCSV('data/term.csv', data => {
+  terms = data.map(d => d.TermID);
+  populateTerms();
+});
+
+// ================= RENDER =================
+function renderStudents(){
+  document.getElementById('studentTable').innerHTML =
+    students.map((s,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${s.StudentID}</td>
+        <td>${s.Name}</td>
+        <td>${s.Program}</td>
+        <td>${s.AdmitTerm}</td>
+        <td>${s.CGPA}</td>
+        <td>${s.AdvisorName}</td>
+      </tr>
+    `).join('');
+}
+
+// ================= DROPDOWNS =================
+function populateLecturers(){
+  lecturerSelect.innerHTML = '<option>-- Select Lecturer --</option>';
+  lecturers.forEach(l => lecturerSelect.innerHTML += `<option>${l}</option>`);
+}
+
+function populateCourses(){
+  courseSelect.innerHTML = '<option>-- Select Course --</option>';
+  courses.forEach(c => courseSelect.innerHTML +=
+    `<option>${c.CourseCode} – ${c.CourseName}</option>`);
+}
+
+function populateTerms(){
+  termSelect.innerHTML = '<option>-- Select Term --</option>';
+  terms.forEach(t => termSelect.innerHTML += `<option>${t}</option>`);
+}
+
+function populateStudents(){
+  studentSelect.innerHTML = '<option>-- Select Student --</option>';
+  students.forEach((s,i)=>studentSelect.innerHTML +=
+    `<option value="${i}">${s.StudentID} - ${s.Name}</option>`);
+}
+
+studentSelect.onchange = () => {
+  const s = students[studentSelect.value];
+  if(s) s_name.value = s.Name;
+};
+
+// ================= INIT =================
+roleSelect.dispatchEvent(new Event('change'));
 </script>
 
 </body>
