@@ -24,6 +24,7 @@ th { background:#f0f2f5; }
 </head>
 
 <body>
+<div id="status" style="color:red;"></div>
 <div class="container">
 
 <h1 style="text-align:center; line-height:1.3;">
@@ -296,16 +297,23 @@ roleSelect.dispatchEvent(new Event('change'));
 
 <script>
   // Load students.csv
-  Papa.parse('data/students.csv', {
-    download: true,
-    header: true,
-    complete: function(results) {
-      console.log('Students CSV:', results.data);
-    },
-    error: function(err) {
-      console.error('Error loading students.csv:', err);
+  function showError(msg) {
+  document.getElementById("status").innerText = msg;
+}
+
+Papa.parse('data/students.csv', {
+  download: true,
+  header: true,
+  complete: function(results) {
+    if (!results.data || results.data.length === 0) {
+      showError("Students CSV loaded but empty");
     }
-  });
+    renderTable(results.data, "studentsTable");
+  },
+  error: function(err) {
+    showError("Failed to load students.csv");
+  }
+});
 
   // Load courses.csv
   Papa.parse('data/courses.csv', {
@@ -322,6 +330,7 @@ roleSelect.dispatchEvent(new Event('change'));
 
 </body>
 </html>
+
 
 
 
