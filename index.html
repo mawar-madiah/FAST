@@ -301,7 +301,7 @@ roleSelect.dispatchEvent(new Event('change'));
   document.getElementById("status").innerText = msg;
 }
 
-Papa.parse('data/students.csv', {
+Papa.parse('data/student.csv', {
   download: true,
   header: true,
   complete: function(results) {
@@ -316,7 +316,7 @@ Papa.parse('data/students.csv', {
 });
 
   // Load courses.csv
-  Papa.parse('data/courses.csv', {
+  Papa.parse('data/course.csv', {
     download: true,
     header: true,
     complete: function(results) {
@@ -330,6 +330,7 @@ Papa.parse('data/students.csv', {
 
 </body>
 </html>
+
 
 
 
