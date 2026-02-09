@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foundation in Science and Technology Academic Support (FAST 1.0)</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f5f7fa; padding:20px; }
+.container { max-width:1100px; margin:auto; background:#fff; padding:24px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+h1,h2 { color:#1f2937; }
+label { font-weight:bold; display:block; margin-top:12px; }
+input,select,textarea { width:100%; padding:8px; margin-top:6px; border:1px solid #ccc; border-radius:6px; }
+textarea { resize:vertical; }
+.btn { margin-top:16px; padding:10px 16px; border:none; border-radius:8px; cursor:pointer; color:#fff; background:#2563eb; }
+.btn.secondary { background:#059669; }
+.btn.export { background:#7c3aed; }
+.btn.delete { background:#ef4444; }
+.note { font-size:.9em; color:#555; }
+.form-section { margin-bottom:40px; }
+table { width:100%; border-collapse:collapse; margin-top:12px; }
+th,td { border:1px solid #ddd; padding:8px; }
+th { background:#f0f2f5; text-align:left; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1 style="text-align:center; line-height:1.3;">Foundation in Science and Technology<br>Academic Support (<strong>FAST 1.0</strong>)</h1>
+<p class="note">Select your role to access features.</p>
+
+<label>Role</label>
+<select id="roleSelect">
+  <option value="lecturer">Lecturer</option>
+  <option value="coordinator">Program Coordinator</option>
+</select>
+
+<!-- PROGRAM COORDINATOR -->
+<div id="coordinatorSection" class="form-section" style="display:none;">
+  <h2>Upload Student List</h2>
+  <p class="note">CSV format: StudentID, Name, Program, AdmitTerm, CGPA, AdvisorName</p>
+  <input type="file" id="csvUpload" accept=".csv">
+
+  <h2>Upload Reference Lists</h2>
+  <p class="note">Lecturers CSV: LecturerName</p>
+  <input type="file" id="lecturerUpload" accept=".csv">
+
+  <p class="note">Courses CSV: CourseCode, CourseName</p>
+  <input type="file" id="courseUpload" accept=".csv">
+
+  <p class="note">Terms CSV: TermID</p>
+  <input type="file" id="termUpload" accept=".csv">
+
+  <button class="btn export" id="exportBtn">Export All Records</button>
+  <button class="btn delete" id="deleteAllBtn">Delete All Data</button>
+
+  <h2>Original Students List</h2>
+  <table id="originalTable">
+    <thead>
+      <tr><th>No.</th><th>Student ID</th><th>Name</th><th>Program</th><th>Admit Term</th><th>CGPA</th><th>Advisor</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>All Saved Records</h2>
+  <table id="pcRecords">
+    <thead>
+      <tr><th>Type</th><th>Lecturer</th><th>Course</th><th>Term</th><th>Student</th><th>Week/Risk/Comment</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- LECTURER -->
+<div id="lecturerSection" class="form-section" style="display:none;">
+<h2>Assign Record</h2>
+
+<label>Lecturer Name</label>
+<select id="lecturerSelect"><option value="">-- Select Lecturer --</option></select>
+
+<label>Course</label>
+<select id="courseSelect"><option value="">-- Select Course --</option></select>
+
+<label>Term</label>
+<select id="termSelect"><option value="">-- Select Term --</option></select>
+
+<label>Student</label>
+<select id="studentSelect"><option value="">-- Select Student --</option></select>
+
+<label>Name</label><input id="s_name" readonly>
+<label>Student ID</label><input id="s_id" readonly>
+<label>Program</label><input id="s_prog" readonly>
+
+<label>Week</label>
+<select id="s_week">
+<option>Week 1</option><option>Week 2</option>
+<option>Week 3</option><option>Week 4</option>
+</select>
+
+<label>Risk Level</label>
+<select id="s_risk">
+<option>Mild</option><option>Moderate</option><option>Severe</option>
+</select>
+
+<label>Comments</label>
+<textarea id="s_comment"></textarea>
+<button class="btn" onclick="saveScreening()">Save Screening</button>
+
+<h2>Saved Records</h2>
+<table id="lecturerRecords">
+<thead>
+<tr><th>Lecturer</th><th>Course</th><th>Term</th><th>Student</th><th>Week/Risk/Comment</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+// Data arrays
+let students=[], lecturers=[], courses=[], terms=[], screening=[];
+
+// Elements
+const roleSelect = document.getElementById('roleSelect');
+const coordinatorSection = document.getElementById('coordinatorSection');
+const lecturerSection = document.getElementById('lecturerSection');
+const csvUpload = document.getElementById('csvUpload');
+const lecturerUpload = document.getElementById('lecturerUpload');
+const courseUpload = document.getElementById('courseUpload');
+const termUpload = document.getElementById('termUpload');
+const originalTable = document.getElementById('originalTable').querySelector('tbody');
+const pcRecords = document.getElementById('pcRecords').querySelector('tbody');
+const lecturerRecords = document.getElementById('lecturerRecords').querySelector('tbody');
+
+const studentSelect = document.getElementById('studentSelect');
+const s_name = document.getElementById('s_name');
+const s_id = document.getElementById('s_id');
+const s_prog = document.getElementById('s_prog');
+const s_week = document.getElementById('s_week');
+const s_risk = document.getElementById('s_risk');
+const s_comment = document.getElementById('s_comment');
+
+const lecturerSelectEl = document.getElementById('lecturerSelect');
+const courseSelectEl = document.getElementById('courseSelect');
+const termSelectEl = document.getElementById('termSelect');
+
+// Role switch
+function switchRole(){
+  const r = roleSelect.value;
+  coordinatorSection.style.display = r==='coordinator'?'block':'none';
+  lecturerSection.style.display = r==='lecturer'?'block':'none';
+  populateDropdowns();
+}
+roleSelect.addEventListener('change', switchRole);
+
+// Load from localStorage
+function loadStorage(){
+  students = JSON.parse(localStorage.getItem('students')||'[]');
+  lecturers = JSON.parse(localStorage.getItem('lecturers')||'[]');
+  courses = JSON.parse(localStorage.getItem('courses')||'[]');
+  terms = JSON.parse(localStorage.getItem('terms')||'[]');
+  screening = JSON.parse(localStorage.getItem('screening')||'[]');
+}
+function saveStorage(){
+  localStorage.setItem('students', JSON.stringify(students));
+  localStorage.setItem('lecturers', JSON.stringify(lecturers));
+  localStorage.setItem('courses', JSON.stringify(courses));
+  localStorage.setItem('terms', JSON.stringify(terms));
+  localStorage.setItem('screening', JSON.stringify(screening));
+}
+
+// CSV upload handlers
+csvUpload.onchange = ()=> {
+  const file = csvUpload.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=> {
+    const lines = reader.result.trim().split('\n').slice(1);
+    students = lines.map(l=>{
+      const [id,name,prog,term,cgpa,advisor]=l.split(',');
+      return {id:id?.trim(), name:name?.trim(), prog:prog?.trim(), term:term?.trim(), cgpa:cgpa?.trim(), advisor:advisor?.trim()};
+    }).filter(s=>s.id);
+    saveStorage(); renderStudents(); populateDropdowns();
+    alert('Students imported');
+  }; reader.readAsText(file);
+};
+
+lecturerUpload.onchange = ()=> {
+  const f = lecturerUpload.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> {
+    lecturers = r.result.trim().split('\n').slice(1).map(l=>l.trim()).filter(Boolean);
+    saveStorage(); populateDropdowns(); alert('Lecturers uploaded');
+  }; r.readAsText(f);
+};
+
+courseUpload.onchange = ()=> {
+  const f = courseUpload.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> {
+    courses = r.result.trim().split('\n').slice(1).map(l=>{
+      const [code,name]=l.split(',');
+      return {code:code?.trim(), name:name?.trim()};
+    }).filter(c=>c.code);
+    saveStorage(); populateDropdowns(); alert('Courses uploaded');
+  }; r.readAsText(f);
+};
+
+termUpload.onchange = ()=> {
+  const f = termUpload.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> {
+    terms = r.result.trim().split('\n').slice(1).map(l=>l.trim()).filter(Boolean);
+    saveStorage(); populateDropdowns(); alert('Terms uploaded');
+  }; r.readAsText(f);
+};
+
+// Render original students
+function renderStudents(){
+  originalTable.innerHTML = students.map((s,i)=>
+    `<tr><td>${i+1}</td><td>${s.id}</td><td>${s.name}</td><td>${s.prog}</td><td>${s.term||''}</td><td>${s.cgpa||''}</td><td>${s.advisor||''}</td></tr>`
+  ).join('');
+}
+
+// Populate lecturer/course/term/student dropdowns
+function populateDropdowns(){
+  lecturerSelectEl.innerHTML = '<option value="">-- Select Lecturer --</option>';
+  lecturers.forEach(l=>lecturerSelectEl.innerHTML += `<option value="${l}">${l}</option>`);
+
+  courseSelectEl.innerHTML = '<option value="">-- Select Course --</option>';
+  courses.forEach(c=>courseSelectEl.innerHTML += `<option value="${c.code}">${c.name}</option>`);
+
+  termSelectEl.innerHTML = '<option value="">-- Select Term --</option>';
+  terms.forEach(t=>termSelectEl.innerHTML += `<option value="${t}">${t}</option>`);
+
+  studentSelect.innerHTML = '<option value="">-- Select Student --</option>';
+  students.forEach((s,i)=> studentSelect.innerHTML += `<option value="${i}">${s.id} - ${s.name}</option>`);
+}
+
+// Student selection
+studentSelect.onchange = ()=>{
+  const s = students[studentSelect.value]; if(!s) return;
+  s_name.value = s.name; s_id.value = s.id; s_prog.value = s.prog;
+};
+
+// Save Screening
+function saveScreening(){
+  if(!s_id.value) return alert('Select student');
+  if(!lecturerSelectEl.value) return alert('Select lecturer');
+  if(!courseSelectEl.value) return alert('Select course');
+  if(!termSelectEl.value) return alert('Select term');
+
+  screening.push({
+    lecturer: lecturerSelectEl.value,
+    course: courseSelectEl.value,
+    term: termSelectEl.value,
+    id: s_id.value,
+    name: s_name.value,
+    week: s_week.value,
+    risk: s_risk.value,
+    comment: s_comment.value
+  });
+  saveStorage(); renderRecords(); alert('Screening saved');
+}
+
+// Render records
+function renderRecords(){
+  const rows = screening.map(d=>`
+    <tr>
+      <td>${d.lecturer}</td>
+      <td>${d.course}</td>
+      <td>${d.term}</td>
+      <td>${d.name}</td>
+      <td>${d.week} / ${d.risk} / ${d.comment}</td>
+    </tr>`);
+  pcRecords.innerHTML = rows.join('');
+  lecturerRecords.innerHTML = rows.join('');
+}
+
+// Delete all
+document.getElementById('deleteAllBtn').onclick = ()=>{
+  if(confirm('Delete all data?')){
+    localStorage.clear(); location.reload();
+  }
+};
+
+// Export CSV
+document.getElementById('exportBtn').onclick = ()=>{
+  let rows=[['Lecturer','Course','Term','Student','Week','Risk','Comment']];
+  screening.forEach(d=>rows.push([d.lecturer,d.course,d.term,d.name,d.week,d.risk,d.comment]));
+  const csv = rows.map(r=>r.map(x=>`"${x||''}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'FAST_records.csv'; a.click();
+};
+
+// Init
+loadStorage(); renderStudents(); populateDropdowns(); renderRecords(); switchRole();
+</script>
+</body>
+</html>
