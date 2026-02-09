@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FAST 2.0 – Laptop & Phone Compatible</title>
+<title>FAST 2.1 – Laptop & Phone Compatible</title>
 
 <style>
 body { font-family: Arial, sans-serif; background:#f5f7fa; padding:20px; }
@@ -29,7 +29,7 @@ th { background:#f0f2f5; }
 
 <h1 style="text-align:center; line-height:1.3;">
 Foundation in Science and Technology<br>
-Academic Support (<strong>FAST 2.0</strong>)
+Academic Support (<strong>FAST 2.1</strong>)
 </h1>
 
 <p class="note">Select your role to access features.</p>
@@ -224,21 +224,40 @@ function loadDefaultCSV(filename, callback){
 // Load default students if localStorage empty
 if(students.length===0){
   loadDefaultCSV('student.csv', data=>{
-    students = data.map(s=>({id:s.StudentID, name:s.Name, prog:s.Program, term:s.AdmitTerm, cgpa:s.CGPA, advisor:s.AdvisorName}));
+    students = data.map(s=>({
+      id: s.StudentID || s.studentid || s.student_id || "",
+      name: s.Name || s.name || "",
+      prog: s.Program || s.program || "",
+      term: s.AdmitTerm || s.admitterm || "",
+      cgpa: s.CGPA || s.cgpa || "",
+      advisor: s.AdvisorName || s.advisorname || s.advisor || ""
+    }));
     renderStudents(); populate();
   });
 }
 
 if(lecturers.length===0){
-  loadDefaultCSV('staff.csv', data=>{ lecturers = data.map(s=>s.LecturerName); populate(); });
+  loadDefaultCSV('staff.csv', data=>{
+    lecturers = data.map(s=> s.LecturerName || s.lecturername || s.name );
+    populate();
+  });
 }
 
 if(courses.length===0){
-  loadDefaultCSV('course.csv', data=>{ courses = data.map(s=>({code:s.CourseCode, name:s.CourseName})); populate(); });
+  loadDefaultCSV('course.csv', data=>{
+    courses = data.map(s=>({
+      code: s.CourseCode || s.coursecode || "",
+      name: s.CourseName || s.coursename || ""
+    }));
+    populate();
+  });
 }
 
 if(terms.length===0){
-  loadDefaultCSV('term.csv', data=>{ terms = data.map(s=>s.TermID); populate(); });
+  loadDefaultCSV('term.csv', data=>{
+    terms = data.map(s=> s.TermID || s.termid || "");
+    populate();
+  });
 }
 
 // ================= RENDER =================
@@ -321,6 +340,5 @@ deleteBtn.onclick=()=>{
 load(); renderStudents(); populate(); renderRecords();
 roleSelect.dispatchEvent(new Event('change'));
 </script>
-
 </body>
 </html>
